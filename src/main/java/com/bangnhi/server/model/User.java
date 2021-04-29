@@ -1,9 +1,13 @@
 package com.bangnhi.server.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+
 import javax.persistence.*;
 
 @Entity
 @Table(name = "Users")
+@Data
 public class User {
 
     @Id
@@ -11,6 +15,7 @@ public class User {
     private Long id;
     private String name;
     private String username;
+    @JsonIgnore
     private String password;
     private String email;
     private boolean enable;

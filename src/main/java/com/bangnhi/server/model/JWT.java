@@ -1,9 +1,12 @@
 package com.bangnhi.server.model;
 
+import lombok.Data;
+
 import javax.persistence.*;
 
 @Entity
 @Table(name = "jwt")
+@Data
 public class JWT {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

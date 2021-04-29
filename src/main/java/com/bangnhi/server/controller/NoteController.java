@@ -1,33 +1,37 @@
 package com.bangnhi.server.controller;
 
 import com.bangnhi.server.model.Note;
+import com.bangnhi.server.model.User;
 import com.bangnhi.server.repository.NoteRepository;
 import com.bangnhi.server.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @RestController
+@RequestMapping("/notes")
 public class NoteController {
-    @Autowired
-    private NoteRepository noteRepository;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private UserRepository userRepository;
+    private final NoteRepository noteRepository;
+    private final UserRepository userRepository;
 
-    @GetMapping("/notes")
-    public @ResponseBody Iterable<Note> getNotes() {
+    public NoteController(NoteRepository noteRepository, UserRepository userRepository) {
+        this.noteRepository = noteRepository;
+        this.userRepository = userRepository;
+    }
+
+    @GetMapping
+    public @ResponseBody
+    Iterable<Note> getNotes() {
         return noteRepository.findAll();
     }
 
-    @PostMapping("/addNote")
+    @PostMapping("/add")
     public ResponseEntity<String> addNote(@RequestParam String title, @RequestParam String description) {
         if (title.isEmpty()) {
             return new ResponseEntity<>("Title is Empty!", null, HttpStatus.BAD_REQUEST);
@@ -38,12 +42,13 @@ public class NoteController {
         return new ResponseEntity<>("Add Note Success", null, HttpStatus.OK);
     }
 
-    @GetMapping("/note/{noteId}")
-    public @ResponseBody Note getNote(@PathVariable Long noteId) {
+    @GetMapping("/{noteId}")
+    public @ResponseBody
+    Note getNote(@PathVariable Long noteId) {
         return noteRepository.findNoteById(noteId);
     }
 
-    @PostMapping("/editNote/{noteId}")
+    @PostMapping("/edit/{noteId}")
     public ResponseEntity<String> editNote(@PathVariable Long noteId, @RequestParam String title, @RequestParam String description) {
         if (title.isEmpty()) {
             return new ResponseEntity<>("Title is Empty!", null, HttpStatus.BAD_REQUEST);
@@ -59,7 +64,34 @@ public class NoteController {
         return new ResponseEntity<>("Edit Note Success", null, HttpStatus.OK);
     }
 
-    @PostMapping("/removeNote/{noteId}")
+    @GetMapping("/user/{userId}")
+    public @ResponseBody
+    List<Note> getNoteByUser(@PathVariable Long userId) {
+        User user = userRepository.findById(userId);
+        return noteRepository.findAllByUser(user);
+    }
+
+    @GetMapping("/user/{userId}/search")
+    public @ResponseBody
+    List<Note> searchNotes(@PathVariable Long userId, @RequestParam String keyword) {
+        User user = userRepository.findById(userId);
+        if (keyword.trim().isEmpty()) {
+            return noteRepository.findAllByUser(user);
+        }
+        return noteRepository.searchInMyNotes(user, keyword.toLowerCase().trim());
+    }
+
+    @GetMapping("/search")
+    public @ResponseBody
+    List<Note> searchNotes(@RequestParam String keyword) {
+        if (keyword.trim().isEmpty()) {
+            return (List<Note>) noteRepository.findAll();
+        }
+        return noteRepository.search(keyword.toLowerCase().trim());
+    }
+
+    @PostMapping("/remove/{noteId}")
+    @Transactional
     public ResponseEntity<String> removeNote(@PathVariable Long noteId) {
         noteRepository.deleteNoteById(noteId);
         return new ResponseEntity<>("Delete Note Success", null, HttpStatus.OK);
